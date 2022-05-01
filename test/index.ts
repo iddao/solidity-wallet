@@ -16,15 +16,39 @@ export function mutateOneChar(str: string, index: number, char: string) {
 describe("MynaWallet", () => {
   it("should be able to create a wallet", async () => {
     const Wallet = await ethers.getContractFactory("MynaWallet");
-    const wallet = await Wallet.deploy({
+    const wallet = await Wallet.deploy();
+    await wallet.deployed();
+    await wallet.initialize({
       e: toZeroX(mynaPubkeyExp),
       n: toZeroX(mynaPubkeyMod),
     });
-    await wallet.deployed();
 
     const pubkey = await wallet.publicKey();
 
     expect(pubkey.e.toString()).to.equal(toZeroX(mynaPubkeyExp));
+  });
+});
+
+describe("MynaWalletFactory", () => {
+  it("should be able to create a wallet", async () => {
+    const Factory = await ethers.getContractFactory("MynaWalletFactory");
+    const factory = await Factory.deploy();
+    await factory.deployed();
+
+    const computed = await factory.computeWalletAddress({
+      e: toZeroX(mynaPubkeyExp),
+      n: toZeroX(mynaPubkeyMod),
+    });
+
+    const result = await factory.createWallet({
+      e: toZeroX(mynaPubkeyExp),
+      n: toZeroX(mynaPubkeyMod),
+    });
+
+    const { events } = await result.wait();
+    const actual = events?.find((e) => e.event === "Created")?.args?.[0];
+
+    expect(actual?.toString()).to.equal(computed.toString());
   });
 });
 
@@ -38,7 +62,9 @@ describe("MynaWallet(ERC20)", () => {
     await testToken.deployed();
 
     const Wallet = await ethers.getContractFactory("MynaWallet");
-    wallet = await Wallet.deploy({
+    const wallet = await Wallet.deploy();
+    await wallet.deployed();
+    await wallet.initialize({
       e: toZeroX(mynaPubkeyExp),
       n: toZeroX(mynaPubkeyMod),
     });

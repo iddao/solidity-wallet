@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 import "./RSAVerifier.sol";
 import "./EIP712RSA.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 contract MynaWallet is EIP712RSA {
     /**
@@ -22,8 +23,23 @@ contract MynaWallet is EIP712RSA {
      */
     mapping(bytes32 => bool) nonces;
 
-    constructor(PublicKey memory _publicKey) EIP712RSA("MynaWallet", "1.0.0") {
-        publicKey = _publicKey;
+    /**
+     * @dev locks for initalization phase
+     */
+    address factory;
+
+    constructor() EIP712RSA("MynaWallet", "1.0.0") {
+        factory = msg.sender;
+    }
+
+    /**
+     * @dev initialize wallet
+     * @param _pubkey public key
+     */
+    function initialize(PublicKey calldata _pubkey) public {
+        require(msg.sender == factory, "Only factory can initialize wallet");
+        publicKey = _pubkey;
+        factory = address(0);
     }
 
     struct InvokeRequest {
