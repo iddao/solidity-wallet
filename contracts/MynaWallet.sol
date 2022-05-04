@@ -3,8 +3,9 @@ pragma solidity ^0.8.0;
 import "./RSAVerifier.sol";
 import "./EIP712RSA.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/interfaces/IERC1271.sol";
 
-contract MynaWallet is EIP712RSA {
+contract MynaWallet is EIP712RSA, IERC1271 {
     /**
      * RSA Public Key
      */
@@ -88,6 +89,25 @@ contract MynaWallet is EIP712RSA {
                 returndatacopy(0, 0, returndatasize())
                 revert(0, returndatasize())
             }
+        }
+    }
+
+    function isValidSignature(bytes32 hash, bytes calldata signature)
+        external
+        view
+        override
+        returns (bytes4 magicValue)
+    {
+        bool valid = RSAVerifier.verifySignature(
+            publicKey.n,
+            publicKey.e,
+            hash,
+            signature
+        );
+        if (valid) {
+            magicValue = 0x1626ba7e;
+        } else {
+            magicValue = 0xffffffff;
         }
     }
 }
